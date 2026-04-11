@@ -21,7 +21,7 @@ class BaseOpenApiIntegrator(ABC):
         """Получение границы страны от OSM"""
 
     @abstractmethod
-    def get_os_info(self) -> Any:
+    def get_os_info(self, border_country: str) -> Any:
         """Получение информации о самолетах от OS"""
         pass
 
@@ -78,11 +78,18 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         params = {'country': country_name, 'format': 'json', 'limit': 1}
         return self._safe_request("GET", self.__url_nominatim, headers=headers, params=params)
 
-    def __get_os(self) -> Any:
+    def __get_os(self, border_country: str) -> Any:
         """Получение информации о самолетах"""
         # Аналог команды: curl -H "Authorization: Bearer $TOKEN" https://opensky-network.org/api/states/all
-        url = f"{self.__url_base_os}/states/all"
-        return self._safe_request("GET", url, headers=self.__token_manager.headers())
+        # https://opensky-network.org/api/states/all?lamin=45.8389&lomin=5.9962&lamax=47.8229&lomax=10.5226
+        query_params = (
+            f"lamin={border_country['lamin']}&"
+            f"lomin={border_country['lomin']}&"
+            f"lamax={border_country['lamax']}&"
+            f"lomax={border_country['lomax']}"
+        )
+        url = f"{self.__url_base_os}/states/all?{query_params}"
+        return self._safe_request("GET", url, headers=self.__token_manager.headers(), params=query_params)
 
     @property
     def get_countries_checklist(self) -> Any:
@@ -93,6 +100,6 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         """Получение границы страны с ресурса OpenStreetMap"""
         return self.__get_osm(country_name)
 
-    def get_os_info(self) -> Any:
+    def get_os_info(self, border_country: str) -> Any:
         """Получение информации о самолетах с ресурса OpenSky"""
-        return self.__get_os()
+        return self.__get_os(border_country)

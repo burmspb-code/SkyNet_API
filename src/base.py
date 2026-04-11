@@ -21,7 +21,7 @@ class BaseSkyMapCoordinator(ABC):
         pass
 
     @abstractmethod
-    def extraction_aircraft_info(self):
+    def extraction_aircraft_info(self, border_country: str) -> Any:
         """Метод получения информации о самолетах"""
         pass
 
@@ -44,11 +44,11 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
         countries = {}
         for element in data.get('elements', []):
             tags = element.get('tags', {})
-            name = tags.get('name:ru') or tags.get('name')  # Пытаемся взять русское название
-            iso_code = tags.get('ISO3166-1')
+            iso_code = tags.get('ISO3166-1:alpha2') or tags.get('ISO3166-1')
+            name = tags.get('name:ru') or tags.get('name')
 
             if name and iso_code:
-                countries[iso_code] = name
+                countries[name] = iso_code
 
         # Сортируем по названию для удобства
         return dict(sorted(countries.items(), key=lambda item: item[1]))
@@ -60,20 +60,26 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
 
         # Проверяем, что пришел не пустой список
         if isinstance(data, list) and len(data) > 0:
-            # Берем первый (самый релевантный) результат
             first_result = data[0]
-
             bbox = first_result.get('boundingbox', [])
 
             if len(bbox) == 4:
-                # Превращаем строки в числа для дальнейшей работы
-                return [float(x) for x in bbox]
+                # Nominatim отдает: [southLat, northLat, westLon, eastLon]
+                # Превращаем в числа
+                lat_min, lat_max, lon_min, lon_max = [float(x) for x in bbox]
 
-        print(f"Данные для {country_name} не найдены.")
-        return None
+                # Возвращаем словарь, который удобно распаковать в параметры запроса
+                return {
+                    "lamin": lat_min,
+                    "lamax": lat_max,
+                    "lomin": lon_min,
+                    "lomax": lon_max
+                }
 
-    def extraction_aircraft_info(self) -> Any:
+        return {}  # Или выкинуть исключение, если данные не найдены
+
+    def extraction_aircraft_info(self, border) -> Any:
         """Метод получения данных о самолетах над определенной рамкой"""
 
-        data = get_os_info()
+        data = self.get_os_info(border)
         return data
