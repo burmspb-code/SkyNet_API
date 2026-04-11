@@ -1,39 +1,37 @@
 from abc import ABC, abstractmethod
 
-from src.utils.mixins import HttpClientMixin
+from src.utils.API_adapter import OpenApiIntegrator
 
 
-class BaseCountryLocator(ABC):
-    """Абстрактный базовый класс для получения координат страны"""
+class BaseSkyMapCoordinator(ABC):
+    """Абстрактный базовый класс для работы с OpenStreetMap и OpenSky"""
 
     @abstractmethod
-    def get_coordinates(self, country_code: str) -> tuple[float, float]:
-        """Метод получения коордиант - кортедж (широта, долгота) по названию страны"""
+    def extraction_border_country(self, country_name: str) -> Any:
+        "Метод получения координат страны"
         pass
-
-class BaseCountryListOpenStreetMap(ABC):
-    """Абстрактный базовый класс для получения списка стран сервиса OpenStreetMap"""
 
     @property
     @abstractmethod
-    def get_country(self) -> list:
+    def extraction_countries_list(self) -> list:
         """Метод получения списка стран"""
         pass
 
-class CountryList(BaseCountryListOpenStreetMap, HttpClientMixin):
-    """Отправляет запрос к Overpass API и выводит названия стран и их коды ISO"""
+
+class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
+    """Получение и обработка данных с OpenSreetMap и OpenSky"""
+
     def __init__(self) -> None:
-        # Используем более быстрое зеркало
-        self.url = "https://overpass.openstreetmap.fr/api/interpreter"
-        self.overpass_query = '[out:json][timeout:25];relation["admin_level"="2"]["ISO3166-1"];out tags;'
+        # Используем быстрое зеркало
+
         super().__init__()
 
     @property
-    def get_country(self) -> list:
+    def extraction_countries_list(self) -> list:
         """Получения списка стран"""
-        # Передаем запрос в параметре 'data' через POST
-        payload = {'data': self.overpass_query}
-        data = self._post(self.url, data=payload)
+
+        # Передаем запрос  через POST
+        data = self.get_countries_checklist
 
         countries = {}
         for element in data.get('elements', []):
@@ -46,3 +44,22 @@ class CountryList(BaseCountryListOpenStreetMap, HttpClientMixin):
 
         # Сортируем по названию для удобства
         return dict(sorted(countries.items(), key=lambda item: item[1]))
+
+    def extraction_border_country(self, country_name: str) -> Any:
+        """Метод получения коордиант - кортедж (широта, долгота) по коду страны"""
+
+        data = self.get_border_country(country_name)
+
+        # Проверяем, что пришел не пустой список
+        if isinstance(data, list) and len(data) > 0:
+            # Берем первый (самый релевантный) результат
+            first_result = data[0]
+
+            bbox = first_result.get('boundingbox', [])
+
+            if len(bbox) == 4:
+                # Превращаем строки в числа для дальнейшей работы
+                return [float(x) for x in bbox]
+
+        print(f"Данные для {country_name} не найдены.")
+        return None

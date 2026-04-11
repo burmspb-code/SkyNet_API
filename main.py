@@ -1,6 +1,9 @@
-from src.base import CountryList
+"""Точка входа"""
+
+from src.base import SkyMapCoordinator
 
 if __name__ == "__main__":
-    #country_name = input("Введите название страны: ")
-    country = CountryList()
-    print(country.get_country)
+
+    fly_obj = SkyMapCoordinator()
+    print(fly_obj.extraction_countries_list)
+    print(fly_obj.extraction_border_country("Австрия"))
