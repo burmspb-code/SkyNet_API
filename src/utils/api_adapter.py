@@ -1,5 +1,6 @@
 """Модуль для взаимодействия с API-сервисами OpenStreetMap и OpenSky"""
 
+import requests
 from abc import ABC, abstractmethod
 from typing import Any
 

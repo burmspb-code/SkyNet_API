@@ -1,5 +1,7 @@
 """Описние базовых классов проекта"""
 
+import os
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -164,8 +166,16 @@ class JsonAircraftStorage(AircraftStorage):
                 json.dump([], f)
 
     def _read_all(self) -> list:
-        with open(self.filename, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            # Проверяем размер файла: если 0, возвращаем пустой список
+            if os.path.getsize(self.filename) == 0:
+                return []
+
+            with open(self.filename, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Если файла нет или в нем "мусор", тоже возвращаем пустой список
+            return []
 
     def _write_all(self, data: list):
         with open(self.filename, 'w', encoding='utf-8') as f:
@@ -196,3 +206,22 @@ class JsonAircraftStorage(AircraftStorage):
             print(f"🗑️ Самолет с ICAO {icao24} удален.")
         else:
             print(f"❌ Самолет с ICAO {icao24} не найден.")
+
+
+    def save_all(self, aircraft_list: list):
+        """Сохраняет весь список объектов за один раз"""
+        existing_data = self._read_all()
+
+        # Превращаем объекты dataclass в словари, если это еще не сделано
+        new_entries = []
+        for ac in aircraft_list:
+            if hasattr(ac, '__dict__'):
+                new_entries.append(ac.__dict__)
+            else:
+                new_entries.append(ac)
+
+        # Объединяем старые и новые данные (можно добавить логику исключения дубликатов)
+        total_data = existing_data + new_entries
+
+        self._write_all(total_data)
+        print(f"✅ Успешно сохранено новых записей: {len(new_entries)}")
