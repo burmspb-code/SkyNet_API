@@ -1,12 +1,7 @@
 """Основной модуль связующей логикми для получения информации о самолетах в заданном регионе"""
 
-from src.base import SkyMapCoordinator
+from src.base import SkyMapCoordinator, AircraftStatus
 
-"""
-1. Нужно получить рамку страны по входному country_name.
-2. Нужно отправить запрос на сервис OpenSky по заданной рамке и получить ответ JSON.
-3. Нужно обработать ответ и получить дынные в соответсвующем формате.
-"""
 fly_obj = SkyMapCoordinator() # Создаем рабочий объект для работы с сервисами OpenStreetMap и OpenSky
 country_dict = fly_obj.extraction_countries_list # Получаем словарь со странами
 
@@ -20,7 +15,10 @@ if country_dict:
             if border_country:
                 print(f"Рамка для страны {country_name}: {border_country}")
                 aircraft_info = fly_obj.extraction_aircraft_info(border_country)
-                print(aircraft_info)
+                aircraft_objects = [AircraftStatus(*state) for state in aircraft_info['states']]
+                print("Информация о самолетах:")
+                for plane in aircraft_objects:
+                    print(plane)
                 break
             else:
                 print("Ошибка. Такой рамки нет. Повторите попытку")

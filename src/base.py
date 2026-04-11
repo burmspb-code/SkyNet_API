@@ -1,10 +1,10 @@
 """Описние базовых классов проекта"""
 
 from abc import ABC, abstractmethod
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
-from src.utils.API_adapter import OpenApiIntegrator
-from src.utils.token_OpenSky import TokenManager
+from src.utils.api_adapter import OpenApiIntegrator
 
 
 class BaseSkyMapCoordinator(ABC):
@@ -27,11 +27,9 @@ class BaseSkyMapCoordinator(ABC):
 
 
 class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
-    """Получение и обработка данных с OpenSreetMap и OpenSky"""
+    """Получение и обработка данных с OpenStreetMap и OpenSky"""
 
     def __init__(self) -> None:
-        # Используем быстрое зеркало
-
         super().__init__()
 
     @property
@@ -83,3 +81,31 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
 
         data = self.get_os_info(border)
         return data
+
+@dataclass(order=True)
+class AircraftStatus:
+    """Класс текущего состояния самолета"""
+
+    # Поля для сравнения (первые в списке)
+    velocity: Optional[float] = field(compare=True)
+    baro_altitude: Optional[float] = field(compare=True)
+
+    # Остальные поля не учавствуют в сравнении
+    icao24: str = field(compare=False)
+    callsign: str = field(compare=False)
+    origin_country: str = field(compare=False)
+    time_position: Optional[int] = field(compare=False)
+    last_contact: Optional[int] = field(compare=False)
+    longitude: Optional[float] = field(compare=False)
+    latitude: Optional[float] = field(compare=False)
+    on_ground: bool = field(compare=False)
+    true_track: Optional[float] = field(compare=False)  # курс
+    vertical_rate: Optional[float] = field(compare=False)
+    sensors: Optional[list] = field(compare=False)
+    geo_altitude: Optional[float] = field(compare=False)
+    squawk: Optional[str] = field(compare=False)
+    spi: bool = field(compare=False)
+    position_source: int = field(compare=False)
+
+    def __repr__(self):
+        return f"<Plane {self.callsign} [{self.icao24}] Alt: {self.altitude}m>"

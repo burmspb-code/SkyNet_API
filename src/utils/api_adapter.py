@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 from requests.exceptions import JSONDecodeError, RequestException
-from src.utils.token_OpenSky import TokenManager
+from src.utils.token_open_sky import TokenManager
 
 
 class BaseOpenApiIntegrator(ABC):
@@ -28,6 +28,7 @@ class BaseOpenApiIntegrator(ABC):
 
 class OpenApiIntegrator(BaseOpenApiIntegrator):
     """Класс для выполнения http запросов"""
+
     def __init__(self):
         self.__overpass_query = '[out:json][timeout:25];relation["admin_level"="2"]["ISO3166-1"];out tags;'
         self.__url_overpass = "https://overpass.openstreetmap.fr/api/interpreter"
@@ -35,8 +36,6 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         self.__token_manager = TokenManager()
         self.__url_base_os = "https://opensky-network.org/api"
         self.country_name = None
-
-
 
     def _safe_request(self, method: str, url: str, **kwargs) -> Any:
         """Метод защищенного подключения через request """
@@ -80,8 +79,7 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
 
     def __get_os(self, border_country: str) -> Any:
         """Получение информации о самолетах"""
-        # Аналог команды: curl -H "Authorization: Bearer $TOKEN" https://opensky-network.org/api/states/all
-        # https://opensky-network.org/api/states/all?lamin=45.8389&lomin=5.9962&lamax=47.8229&lomax=10.5226
+
         query_params = (
             f"lamin={border_country['lamin']}&"
             f"lomin={border_country['lomin']}&"
