@@ -26,6 +26,25 @@ class BaseSkyMapCoordinator(ABC):
         pass
 
 
+class AircraftStorage(ABC):
+    """Абстрактный класс для хранилищ данных о самолетах"""
+
+    @abstractmethod
+    def add_aircraft(self, aircraft_data: dict):
+        """Добавить информацию о самолете в файл"""
+        pass
+
+    @abstractmethod
+    def get_aircraft(self, criteria: dict):
+        """Получить данные из файла по критериям (например, {'callsign': 'AEE995'})"""
+        pass
+
+    @abstractmethod
+    def delete_aircraft(self, icao24: str):
+        """Удалить информацию о самолете по его ID (icao24)"""
+        pass
+
+
 class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
     """Получение и обработка данных с OpenStreetMap и OpenSky"""
 
@@ -74,7 +93,7 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
                     "lomax": lon_max
                 }
 
-        return {}  # Или выкинуть исключение, если данные не найдены
+        return {}
 
     def extraction_aircraft_info(self, border) -> Any:
         """Метод получения данных о самолетах над определенной рамкой"""
@@ -82,30 +101,98 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
         data = self.get_os_info(border)
         return data
 
+
 @dataclass(order=True)
 class AircraftStatus:
     """Класс текущего состояния самолета"""
 
-    # Поля для сравнения (первые в списке)
-    velocity: Optional[float] = field(compare=True)
-    baro_altitude: Optional[float] = field(compare=True)
+    # Поля для сравнения
+    velocity: float = field(compare=True)
+    altitude: float = field(compare=True)
 
-    # Остальные поля не учавствуют в сравнении
-    icao24: str = field(compare=False)
+    # Информационные поля
     callsign: str = field(compare=False)
     origin_country: str = field(compare=False)
-    time_position: Optional[int] = field(compare=False)
-    last_contact: Optional[int] = field(compare=False)
-    longitude: Optional[float] = field(compare=False)
-    latitude: Optional[float] = field(compare=False)
     on_ground: bool = field(compare=False)
-    true_track: Optional[float] = field(compare=False)  # курс
-    vertical_rate: Optional[float] = field(compare=False)
-    sensors: Optional[list] = field(compare=False)
-    geo_altitude: Optional[float] = field(compare=False)
-    squawk: Optional[str] = field(compare=False)
-    spi: bool = field(compare=False)
-    position_source: int = field(compare=False)
+
+    def __init__(self, *args):
+        """Принимает все 17 параметров от API, но сохраняет только 5"""
+        # Индексы в данных OpenSky:
+        # 1: callsign, 2: country, 7: baro_altitude, 8: on_ground, 9: velocity
+
+        # Валидация позывного (индекс 1)
+        raw_callsign = args[1]
+        self.callsign = str(raw_callsign).strip() if raw_callsign else "Н/Д"
+
+        # Валидация страны (индекс 2)
+        self.origin_country = str(args[2]) if args[2] else "Неизвестно"
+
+        # Валидация высоты (индекс 7)
+        raw_alt = args[7]
+        if raw_alt is None:
+            self.altitude = 0.0
+        elif not isinstance(raw_alt, (int, float)):
+            raise ValueError(f"Некорректный тип высоты: {type(raw_alt)}")
+        else:
+            self.altitude = float(raw_alt)
+
+        # Валидация статуса земли (индекс 8)
+        self.on_ground = bool(args[8])
+
+        # Валидация скорости (индекс 9)
+        raw_vel = args[9]
+        if raw_vel is None:
+            self.velocity = 0.0
+        elif raw_vel < 0:
+            # Технически скорость относительно земли не может быть < 0
+            self.velocity = abs(float(raw_vel))
+        else:
+            self.velocity = float(raw_vel)
 
     def __repr__(self):
-        return f"<Plane {self.callsign} [{self.icao24}] Alt: {self.altitude}m>"
+        status = "🅿️ На земле" if self.on_ground else "✈️ В воздухе"
+        return (f"{status} | Рейс: {self.callsign} ({self.origin_country}) | "
+                f"Высота: {int(self.altitude)}м | Скорость: {int(self.velocity * 3.6)}км/ч")
+
+
+class JsonAircraftStorage(AircraftStorage):
+    def __init__(self, filename: str = "aircrafts.json"):
+        self.filename = filename
+        # Создаем пустой файл, если его нет
+        if not os.path.exists(self.filename):
+            with open(self.filename, 'w', encoding='utf-8') as f:
+                json.dump([], f)
+
+    def _read_all(self) -> list:
+        with open(self.filename, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    def _write_all(self, data: list):
+        with open(self.filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+    def add_aircraft(self, aircraft: dict):
+        data = self._read_all()
+        # Проверяем, нет ли уже такого самолета (по icao24)
+        data = [item for item in data if item.get('icao24') != aircraft.get('icao24')]
+        data.append(aircraft)
+        self._write_all(data)
+        print(f"✅ Самолет {aircraft.get('callsign')} сохранен в JSON.")
+
+    def get_aircraft(self, criteria: dict) -> list:
+        data = self._read_all()
+        results = []
+        for item in data:
+            # Проверяем совпадение по всем переданным критериям
+            if all(item.get(k) == v for k, v in criteria.items()):
+                results.append(item)
+        return results
+
+    def delete_aircraft(self, icao24: str):
+        data = self._read_all()
+        new_data = [item for item in data if item.get('icao24') != icao24]
+        if len(data) != len(new_data):
+            self._write_all(new_data)
+            print(f"🗑️ Самолет с ICAO {icao24} удален.")
+        else:
+            print(f"❌ Самолет с ICAO {icao24} не найден.")

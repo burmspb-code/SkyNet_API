@@ -3,8 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-import requests
 from requests.exceptions import JSONDecodeError, RequestException
+
 from src.utils.token_open_sky import TokenManager
 
 
