@@ -1,12 +1,25 @@
+"""Модуль для обновления токена для OpenSky"""
+
+import os
+from datetime import datetime, timedelta
+import requests
+from dotenv import load_dotenv
+
 TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
-CLIENT_ID = "your_client_id"
-CLIENT_SECRET = "your_client_secret"
+
+# Загружаем переменные из .env
+load_dotenv()
+
+# Достаем значения из окружения
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
 # How many seconds before expiry to proactively refresh the token.
 TOKEN_REFRESH_MARGIN = 30
 
 
 class TokenManager:
+    """Класс обновления токена"""
     def __init__(self):
         self.token = None
         self.expires_at = None

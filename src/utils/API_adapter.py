@@ -1,38 +1,66 @@
 """Модуль для взаимодействия с API-сервисами OpenStreetMap и OpenSky"""
 
-import requests
-from requests.exceptions import RequestException, JSONDecodeError
 from abc import ABC, abstractmethod
+from typing import Any
+
+import requests
+from requests.exceptions import JSONDecodeError, RequestException
+from src.utils.token_OpenSky import TokenManager
+
 
 class BaseOpenApiIntegrator(ABC):
     """Абстрактный класс для взаимодествия по API"""
 
     @abstractmethod
     def get_countries_checklist(self) -> Any:
-        """Получение перечня стран"""
+        """Получение перечня стран от OSM"""
         pass
 
     @abstractmethod
     def get_border_country(self, country_name: str) -> Any:
-        """Получение границы страны"""
+        """Получение границы страны от OSM"""
 
     @abstractmethod
     def get_os_info(self) -> Any:
-        """Получение информации о самолетах OS"""
+        """Получение информации о самолетах от OS"""
         pass
 
 
 class OpenApiIntegrator(BaseOpenApiIntegrator):
     """Класс для выполнения http запросов"""
-    __overpass_query = '[out:json][timeout:25];relation["admin_level"="2"]["ISO3166-1"];out tags;'
-    __url_overpass = "https://overpass.openstreetmap.fr/api/interpreter"
-    __url_nominatim = 'https://nominatim.openstreetmap.org/search'
-
     def __init__(self):
+        self.__overpass_query = '[out:json][timeout:25];relation["admin_level"="2"]["ISO3166-1"];out tags;'
+        self.__url_overpass = "https://overpass.openstreetmap.fr/api/interpreter"
+        self.__url_nominatim = 'https://nominatim.openstreetmap.org/search'
+        self.__token_manager = TokenManager()
+        self.__url_base_os = "https://opensky-network.org/api"
         self.country_name = None
-        self.payload = {'data': self.__overpass_query}
 
+
+
+    def _safe_request(self, method: str, url: str, **kwargs) -> Any:
+        """Метод защищенного подключения через request """
         print("Подключение к сервисам OpenStreetMap и OpenSky")
+        # Инициализируем переменную заранее
+        response = None
+        try:
+            # Используем универсальный requests.request
+            response = requests.request(method, url, timeout=30, **kwargs)
+            print(f"Отправка запроса на {url}; Статус ответа: {response.status_code}")
+            response.raise_for_status()
+            return response.json()
+        except JSONDecodeError:
+            print(f"Ошибка парсинга JSON. Получен HTML/текст: {response.text[:200]}...")
+            return {}
+        except RequestException as e:
+            # Логируем сетевые ошибки (504, 404, Connection Error и т.д.)
+            print(f"Сетевая ошибка при запросе {url}: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"Тело ошибки: {e.response.text}")
+            return {}
+        except Exception as e:
+            print(f"Непредвиденная ошибка: {e}")
+            return {}
 
     def __post_osm(self) -> Any:
         """Отправка POST-запроса на overpass для получения списка стран с кодами"""
@@ -40,66 +68,21 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
             'User-Agent': 'SkyNet_API/1.0',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-
-        # Инициализируем переменную заранее
-        response = None
-
-        print(f"Отправка POST запроса на {self.__url_overpass}")
-
-        try:
-            response = requests.post(self.__url_overpass, data=self.payload, headers=headers, timeout=60)
-            print(f"Статус ответа: {response.status_code}")
-            response.raise_for_status()
-            return response.json()
-
-        except JSONDecodeError:
-            print(f"Ошибка парсинга JSON. Получен HTML/текст: {response.text[:200]}...")
-            return {}
-
-        except RequestException as e:
-            # Логируем сетевые ошибки (504, 404, Connection Error и т.д.)
-            print(f"Сетевая ошибка при запросе к {self.__overpass_query}: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"Тело ошибки: {e.response.text}")
-            return {}
-        except Exception as e:
-            print(f"Непредвиденная ошибка: {e}")
-            return {}
+        payload = {'data': self.__overpass_query}
+        return self._safe_request("POST", self.__url_overpass, headers=headers, data=payload)
 
     def __get_osm(self, country_name: str) -> Any:
         """Отправка GET-запроса для получения границы (рамки) объекта"""
         # Headers с user-agent - обязательный параметр при запросе к nominatim.openstreetmap.
         headers = {'User-Agent': 'SkyNet_API/1.0'}
         params = {'country': country_name, 'format': 'json', 'limit': 1}
+        return self._safe_request("GET", self.__url_nominatim, headers=headers, params=params)
 
-        # Инициализируем переменную заранее
-        response = None
-
-        print(f"Отправка GET запроса на {self.__url_nominatim}")
-
-        try:
-            response = requests.get(self.__url_nominatim, params=params, headers=headers, timeout=20)
-            print(f"Статус ответа: {response.status_code}")
-            response.raise_for_status()
-            return response.json()
-
-        except JSONDecodeError:
-            print(f"Ошибка парсинга JSON. Получен HTML/текст: {response.text[:200]}...")
-            return {}
-
-        except RequestException as e:
-            # Логируем сетевые ошибки (504, 404, Connection Error и т.д.)
-            print(f"Сетевая ошибка при запросе к {self.__url_nominatim}: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"Тело ошибки: {e.response.text}")
-            return {}
-        except Exception as e:
-            print(f"Непредвиденная ошибка: {e}")
-            return {}
-
-    def get_os_info(self) -> Any:
+    def __get_os(self) -> Any:
         """Получение информации о самолетах"""
-        pass
+        # Аналог команды: curl -H "Authorization: Bearer $TOKEN" https://opensky-network.org/api/states/all
+        url = f"{self.__url_base_os}/states/all"
+        return self._safe_request("GET", url, headers=self.__token_manager.headers())
 
     @property
     def get_countries_checklist(self) -> Any:
@@ -107,5 +90,9 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         return self.__post_osm()
 
     def get_border_country(self, country_name: str) -> Any:
-        """Получение границы страны"""
+        """Получение границы страны с ресурса OpenStreetMap"""
         return self.__get_osm(country_name)
+
+    def get_os_info(self) -> Any:
+        """Получение информации о самолетах с ресурса OpenSky"""
+        return self.__get_os()

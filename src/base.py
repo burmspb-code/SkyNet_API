@@ -1,6 +1,10 @@
+"""Описние базовых классов проекта"""
+
 from abc import ABC, abstractmethod
+from typing import Any
 
 from src.utils.API_adapter import OpenApiIntegrator
+from src.utils.token_OpenSky import TokenManager
 
 
 class BaseSkyMapCoordinator(ABC):
@@ -8,13 +12,17 @@ class BaseSkyMapCoordinator(ABC):
 
     @abstractmethod
     def extraction_border_country(self, country_name: str) -> Any:
-        "Метод получения координат страны"
+        """Метод получения координат страны"""
         pass
 
-    @property
     @abstractmethod
     def extraction_countries_list(self) -> list:
         """Метод получения списка стран"""
+        pass
+
+    @abstractmethod
+    def extraction_aircraft_info(self):
+        """Метод получения информации о самолетах"""
         pass
 
 
@@ -63,3 +71,9 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
 
         print(f"Данные для {country_name} не найдены.")
         return None
+
+    def extraction_aircraft_info(self) -> Any:
+        """Метод получения данных о самолетах над определенной рамкой"""
+
+        data = get_os_info()
+        return data
