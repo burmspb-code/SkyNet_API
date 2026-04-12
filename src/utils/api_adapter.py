@@ -7,7 +7,9 @@ from typing import Any
 from requests.exceptions import JSONDecodeError, RequestException
 
 from src.utils.token_open_sky import TokenManager
+from src.utils.logging_config import setup_logger
 
+logger = setup_logger("api_adapter")
 
 class BaseOpenApiIntegrator(ABC):
     """Абстрактный класс для взаимодествия по API"""
@@ -38,28 +40,29 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         self.__url_base_os = "https://opensky-network.org/api"
         self.country_name = None
 
+    @staticmethod
     def _safe_request(self, method: str, url: str, **kwargs) -> Any:
         """Метод защищенного подключения через request """
-        print("Подключение к сервисам OpenStreetMap и OpenSky")
+
         # Инициализируем переменную заранее
         response = None
         try:
             # Используем универсальный requests.request
             response = requests.request(method, url, timeout=30, **kwargs)
-            print(f"Отправка запроса на {url}; Статус ответа: {response.status_code}")
+            logger.info(f"Отправка запроса на {url}; Статус ответа: {response.status_code}")
             response.raise_for_status()
             return response.json()
         except JSONDecodeError:
-            print(f"Ошибка парсинга JSON. Получен HTML/текст: {response.text[:200]}...")
+            logger.error(f"Ошибка парсинга JSON. Получен HTML/текст: {response.text[:200]}...")
             return {}
         except RequestException as e:
             # Логируем сетевые ошибки (504, 404, Connection Error и т.д.)
-            print(f"Сетевая ошибка при запросе {url}: {e}")
+            logger.error(f"Сетевая ошибка при запросе {url}: {e}")
             if hasattr(e, 'response') and e.response is not None:
-                print(f"Тело ошибки: {e.response.text}")
+                logger.error(f"Тело ошибки: {e.response.text}")
             return {}
         except Exception as e:
-            print(f"Непредвиденная ошибка: {e}")
+            logger.error(f"Непредвиденная ошибка: {e}")
             return {}
 
     def __post_osm(self) -> Any:

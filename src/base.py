@@ -1,13 +1,16 @@
 """Описние базовых классов проекта"""
 
-import os
 import json
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
+from src.utils.logging_config import setup_logger
 from src.utils.api_adapter import OpenApiIntegrator
 
+
+logger = setup_logger("base")
 
 class BaseSkyMapCoordinator(ABC):
     """Абстрактный базовый класс для работы с OpenStreetMap и OpenSky"""
@@ -18,7 +21,7 @@ class BaseSkyMapCoordinator(ABC):
         pass
 
     @abstractmethod
-    def extraction_countries_list(self) -> list:
+    def extraction_countries(self) -> list:
         """Метод получения списка стран"""
         pass
 
@@ -54,23 +57,35 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
         super().__init__()
 
     @property
-    def extraction_countries_list(self) -> list:
+    def extraction_countries(self) -> list:
         """Получения списка стран"""
 
         # Передаем запрос  через POST
         data = self.get_countries_checklist
 
-        countries = {}
+        search_index = {}
         for element in data.get('elements', []):
             tags = element.get('tags', {})
             iso_code = tags.get('ISO3166-1:alpha2') or tags.get('ISO3166-1')
-            name = tags.get('name:ru') or tags.get('name')
 
-            if name and iso_code:
-                countries[name] = iso_code
+            name_ru = tags.get('name:ru')
+            name_en = tags.get('name:en') or tags.get('name')
 
-        # Сортируем по названию для удобства
-        return dict(sorted(countries.items(), key=lambda item: item[1]))
+            if iso_code:
+                # Данные о стране
+                country_data = {
+                    "iso": iso_code,
+                    "name_ru": name_ru,
+                    "name_en": name_en
+                }
+
+                # Добавляем в индекс оба названия
+                if name_ru:
+                    search_index[name_ru.lower()] = country_data
+                if name_en:
+                    search_index[name_en.lower()] = country_data
+
+        return search_index
 
     def extraction_border_country(self, country_name: str) -> Any:
         """Метод получения коордиант - кортедж (широта, долгота) по коду страны"""
@@ -134,7 +149,8 @@ class AircraftStatus:
         if raw_alt is None:
             self.altitude = 0.0
         elif not isinstance(raw_alt, (int, float)):
-            raise ValueError(f"Некорректный тип высоты: {type(raw_alt)}")
+            logger.error(f"Некорректный тип высоты: {type(raw_alt)}, значение заменено на 0.0.")
+            self.altitude = 0.0
         else:
             self.altitude = float(raw_alt)
 
@@ -152,12 +168,14 @@ class AircraftStatus:
             self.velocity = float(raw_vel)
 
     def __repr__(self):
+        """Вывод информации для разработчкика"""
         status = "🅿️ На земле" if self.on_ground else "✈️ В воздухе"
         return (f"{status} | Рейс: {self.callsign} ({self.origin_country}) | "
                 f"Высота: {int(self.altitude)}м | Скорость: {int(self.velocity * 3.6)}км/ч")
 
 
 class JsonAircraftStorage(AircraftStorage):
+    """Класс для работы с файлами в формате JSON """
     def __init__(self, filename: str = "aircrafts.json"):
         self.filename = filename
         # Создаем пустой файл, если его нет
@@ -166,6 +184,7 @@ class JsonAircraftStorage(AircraftStorage):
                 json.dump([], f)
 
     def _read_all(self) -> list:
+        """Загрузка JSON файла"""
         try:
             # Проверяем размер файла: если 0, возвращаем пустой список
             if os.path.getsize(self.filename) == 0:
@@ -173,23 +192,29 @@ class JsonAircraftStorage(AircraftStorage):
 
             with open(self.filename, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            # Если файла нет или в нем "мусор", тоже возвращаем пустой список
+        except FileNotFoundError:
+            logger.error("Файл не найден.")
+            return []
+        except json.JSONDecodeError:
+            logger.error("Ошибка декодиирования JSON")
             return []
 
     def _write_all(self, data: list):
+        """Запись данных JSON в файл"""
         with open(self.filename, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     def add_aircraft(self, aircraft: dict):
+        """Добавление выбранного самолета"""
         data = self._read_all()
         # Проверяем, нет ли уже такого самолета (по icao24)
         data = [item for item in data if item.get('icao24') != aircraft.get('icao24')]
         data.append(aircraft)
         self._write_all(data)
-        print(f"✅ Самолет {aircraft.get('callsign')} сохранен в JSON.")
+        logger.info(f"✅ Самолет {aircraft.get('callsign')} сохранен в JSON.")
 
     def get_aircraft(self, criteria: dict) -> list:
+        """Поиск по заданному критерию"""
         data = self._read_all()
         results = []
         for item in data:
@@ -199,13 +224,14 @@ class JsonAircraftStorage(AircraftStorage):
         return results
 
     def delete_aircraft(self, icao24: str):
+        """Удаление выбранного самолета"""
         data = self._read_all()
         new_data = [item for item in data if item.get('icao24') != icao24]
         if len(data) != len(new_data):
             self._write_all(new_data)
-            print(f"🗑️ Самолет с ICAO {icao24} удален.")
+            logger.info(f"🗑️ Самолет с ICAO {icao24} удален.")
         else:
-            print(f"❌ Самолет с ICAO {icao24} не найден.")
+            logger.info(f"❌ Самолет с ICAO {icao24} не найден.")
 
 
     def save_all(self, aircraft_list: list):
@@ -224,4 +250,4 @@ class JsonAircraftStorage(AircraftStorage):
         total_data = existing_data + new_entries
 
         self._write_all(total_data)
-        print(f"✅ Успешно сохранено новых записей: {len(new_entries)}")
+        logger.info(f"✅ Успешно сохранено новых записей: {len(new_entries)}")

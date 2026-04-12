@@ -7,7 +7,7 @@ def user_interaction():
     """Функция для взаимодествия с пользователем"""
     fly_obj = SkyMapCoordinator()
     storage = JsonAircraftStorage("history.json")
-    country_dict = fly_obj.extraction_countries_list
+    country_dict = fly_obj.extraction_countries
 
     # Вспомогательный список для хранения результатов последнего запроса в памяти
     current_aircrafts = []
@@ -25,8 +25,8 @@ def user_interaction():
         choice = input("\nВыберите действие: ")
 
         if choice == "1":
-            country_name = input("Введите название страны (напр. Австрия): ")
-            if country_name in country_dict:
+            country_name = input("Введите название страны (напр. Австрия или Austria): ")
+            if country_name.lower() in country_dict:
                 border = fly_obj.extraction_border_country(country_name)
                 info = fly_obj.extraction_aircraft_info(border)
 
@@ -81,5 +81,3 @@ def user_interaction():
         else:
             print("Некорректный ввод.")
 
-if __name__ == "__main__":
-    user_interaction()
