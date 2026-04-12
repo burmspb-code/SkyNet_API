@@ -1,3 +1,5 @@
+"""Модуль настройки для логирования проекта"""
+
 import logging
 import os
 from logging import Logger

@@ -1,12 +1,14 @@
 """Основной модуль связующей логикми для получения информации о самолетах в заданном регионе"""
 
-from src.base import SkyMapCoordinator, AircraftStatus, JsonAircraftStorage
+from src.base import SkyMapCoordinator
+from src.sky_control import AircraftStatus
+from src.depot import JsonAircraftStorage
 
 
-def user_interaction():
+def user_interaction() -> None:
     """Функция для взаимодествия с пользователем"""
     fly_obj = SkyMapCoordinator()
-    storage = JsonAircraftStorage("history.json")
+    storage = JsonAircraftStorage()
     country_dict = fly_obj.extraction_countries
 
     # Вспомогательный список для хранения результатов последнего запроса в памяти
@@ -18,7 +20,7 @@ def user_interaction():
         print("\nДоступные действия:")
         print("1. Запросить данные по стране (OpenSky)")
         print("2. Топ N самолетов по высоте")
-        print("3. Поиск самолетов по стране регистрации (в текущем списке)")
+        print("3. Поиск самолетов по стране регистрации")
         print("4. Сохранить текущий список в файл")
         print("0. Выход")
 
@@ -74,6 +76,7 @@ def user_interaction():
 
             # Сохраняем весь список разом
             storage.save_all(current_aircrafts)
+            print("✅ Данные сохранены")
 
         elif choice == "0":
             print("Завершение работы.")

@@ -48,7 +48,7 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         response = None
         try:
             # Используем универсальный requests.request
-            response = requests.request(method, url, timeout=30, **kwargs)
+            response = requests.request(method, url, timeout=60, **kwargs)
             logger.info(f"Отправка запроса на {url}; Статус ответа: {response.status_code}")
             response.raise_for_status()
             return response.json()
