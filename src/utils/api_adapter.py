@@ -2,7 +2,7 @@
 
 import requests
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Dict
 
 from requests.exceptions import JSONDecodeError, RequestException
 
@@ -24,7 +24,7 @@ class BaseOpenApiIntegrator(ABC):
         """Получение границы страны от OSM"""
 
     @abstractmethod
-    def get_os_info(self, border_country: str) -> Any:
+    def get_os_info(self, border_country: Dict[str, float]) -> Any:
         """Получение информации о самолетах от OS"""
         pass
 
@@ -53,7 +53,8 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
             response.raise_for_status()
             return response.json()
         except JSONDecodeError:
-            logger.error(f"Ошибка парсинга JSON. Получен HTML/текст: {response.text[:200]}...")
+            content = response.text[:200] if response is not None else "Нет ответа response"
+            logger.error(f"Ошибка парсинга JSON. Получен HTML/текст: {content}...")
             return {}
         except RequestException as e:
             # Логируем сетевые ошибки (504, 404, Connection Error и т.д.)
@@ -81,19 +82,20 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         params = {'country': country_name, 'format': 'json', 'limit': 1}
         return self._safe_request("GET", self.__url_nominatim, headers=headers, params=params)
 
-    def __get_os(self, border_country: str) -> Any:
+    def __get_os(self, border_country: Dict[str, float]) -> Any:
         """Получение информации о самолетах"""
 
-        query_params = (
-            f"lamin={border_country['lamin']}&"
-            f"lomin={border_country['lomin']}&"
-            f"lamax={border_country['lamax']}&"
-            f"lomax={border_country['lomax']}"
-        )
-        url = f"{self.__url_base_os}/states/all?{query_params}"
+        query_params = {
+            "lamin": border_country["lamin"],
+            "lomin": border_country["lomin"],
+            "lamax": border_country["lamax"],
+            "lomax": border_country["lomax"]
+        }
+
+        url = f"{self.__url_base_os}/states/all"
+
         return self._safe_request("GET", url, headers=self.__token_manager.headers(), params=query_params)
 
-    @property
     def get_countries_checklist(self) -> Any:
         """Получение перечня стран с ресурса OpenStreetMap"""
         return self.__post_osm()
@@ -102,6 +104,6 @@ class OpenApiIntegrator(BaseOpenApiIntegrator):
         """Получение границы страны с ресурса OpenStreetMap"""
         return self.__get_osm(country_name)
 
-    def get_os_info(self, border_country: str) -> Any:
+    def get_os_info(self, border_country: Dict[str, float]) -> Any:
         """Получение информации о самолетах с ресурса OpenSky"""
         return self.__get_os(border_country)

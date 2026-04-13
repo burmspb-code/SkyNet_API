@@ -52,7 +52,11 @@ class JsonAircraftStorage(AircraftStorage):
         """Запись данных JSON в файл"""
 
         # Конвертируем только объекты-датаклассы, остальное оставляем без изменений
-        serializable_data = [asdict(obj) if is_dataclass(obj) else obj for obj in data]
+        # C Проверкой not isinstance(obj, type)
+        serializable_data = [
+            asdict(obj) if is_dataclass(obj) and not isinstance(obj, type) else obj
+            for obj in data
+        ]
 
         with open(self.__filename, 'w', encoding='utf-8') as f:
             json.dump(serializable_data, f, ensure_ascii=False, indent=4)
@@ -102,15 +106,12 @@ class JsonAircraftStorage(AircraftStorage):
         new_count = 0
         for ac in aircraft_list:
             # Приводим объект к словарю (учитывая __slots__ через asdict)
-            if is_dataclass(ac):
+            if is_dataclass(ac) and not isinstance(ac, type):
                 ac_dict = asdict(ac)
-                print("это датакласс")
             elif hasattr(ac, '__dict__'):
                 ac_dict = ac.__dict__
-                print("это словарь")
             else:
                 ac_dict = ac
-                print("это не то не се")
 
             icao = ac_dict.get('icao24')
             if icao:

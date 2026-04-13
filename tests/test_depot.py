@@ -11,8 +11,8 @@ def test_json_storage_lifecycle(tmp_path):
 
     # Данные для сохранения
     sample_aircrafts = [
-        {'callsign': 'AFL123', 'altitude': 10000, 'origin_country': 'Russia'},
-        {'callsign': 'BAW456', 'altitude': 11000, 'origin_country': 'UK'}
+        {'icao24': '4bb0eb','callsign': 'AFL123', 'altitude': 10000, 'origin_country': 'Russia'},
+        {'icao24': "4007f4", 'callsign': 'BAW456', 'altitude': 11000, 'origin_country': 'UK'}
     ]
 
     # 1. Тест сохранения

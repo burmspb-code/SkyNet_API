@@ -29,7 +29,7 @@ def mock_coordinator():
     with patch('src.aircraft_collector.SkyMapCoordinator') as mock:
         instance = mock.return_value
         # Эмулируем базу стран
-        instance.extraction_countries = {"австрия": [46, 49, 9, 17], "austria": [46, 49, 9, 17]}
+        instance.extraction_countries.return_value = {"австрия": [46, 49, 9, 17], "austria": [46, 49, 9, 17]}
         # Эмулируем ответ API (один самолет)
         instance.extraction_aircraft_info.return_value = {
             'states': [['icao123', 'CALLSIGN', 'Austria', 1705000000, 1705000000, 10.0, 47.0, 5000.0, False, 250.0, 180.0, 0.0, None, 5000.0, '1234', False, 0]]

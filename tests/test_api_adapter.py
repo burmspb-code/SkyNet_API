@@ -41,8 +41,7 @@ def test_get_countries_checklist(integrator):
 
     with requests_mock.Mocker() as m:
         m.post("https://overpass.openstreetmap.fr/api/interpreter", json=mock_data)
-        # Обратите внимание, в вашем коде это @property
-        result = integrator.get_countries_checklist
+        result = integrator.get_countries_checklist()
         assert result == mock_data
         assert m.called
 

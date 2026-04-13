@@ -9,7 +9,7 @@ def user_interaction() -> None:
     """Функция для взаимодествия с пользователем"""
     fly_obj = SkyMapCoordinator()
     storage = JsonAircraftStorage()
-    country_dict = fly_obj.extraction_countries
+    country_dict = fly_obj.extraction_countries()
 
     # Вспомогательный список для хранения результатов последнего запроса в памяти
     current_aircrafts = []

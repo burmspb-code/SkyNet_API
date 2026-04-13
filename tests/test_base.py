@@ -18,10 +18,10 @@ def test_extraction_countries_indexing(coordinator):
     }
 
     # Патчим метод, который вызывается ВНУТРИ свойства extraction_countries
-    with patch.object(SkyMapCoordinator, 'get_countries_checklist', new_callable=PropertyMock) as mock_get:
+    with patch.object(SkyMapCoordinator, 'get_countries_checklist') as mock_get:
         mock_get.return_value = mock_data
 
-        index = coordinator.extraction_countries
+        index = coordinator.extraction_countries()
 
         # Проверяем наличие ключей
         assert 'австрия' in index, f"Ключ 'австрия' не найден. Доступные ключи: {list(index.keys())}"

@@ -1,7 +1,7 @@
 """Описние базовых классов проекта"""
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Dict
 
 from src.utils.api_adapter import OpenApiIntegrator
 from src.utils.logging_config import setup_logger
@@ -22,7 +22,7 @@ class BaseSkyMapCoordinator(ABC):
         pass
 
     @abstractmethod
-    def extraction_aircraft_info(self, border_country: str) -> Any:
+    def extraction_aircraft_info(self, border_country: Dict[str, float]) -> Any:
         """Метод получения информации о самолетах"""
         pass
 
@@ -52,12 +52,11 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
     def __init__(self) -> None:
         super().__init__()
 
-    @property
-    def extraction_countries(self) -> list:
+    def extraction_countries(self) -> Any:
         """Получения списка стран"""
 
         # Передаем запрос  через POST
-        data = self.get_countries_checklist
+        data = self.get_countries_checklist()
 
         search_index = {}
         for element in data.get('elements', []):
