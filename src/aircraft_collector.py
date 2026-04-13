@@ -1,4 +1,4 @@
-"""Основной модуль связующей логикми для получения информации о самолетах в заданном регионе"""
+"""Моудль для взаимодействия с пользователем через консоль"""
 
 from src.base import SkyMapCoordinator
 from src.depot import JsonAircraftStorage

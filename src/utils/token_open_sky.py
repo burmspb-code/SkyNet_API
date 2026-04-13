@@ -1,4 +1,4 @@
-"""Модуль для обновления токена для OpenSky"""
+"""Модуль для получения токена для OpenSky"""
 
 import os
 from datetime import datetime, timedelta
