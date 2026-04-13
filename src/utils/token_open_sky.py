@@ -2,6 +2,7 @@
 
 import os
 from datetime import datetime, timedelta
+
 import requests
 from dotenv import load_dotenv
 
@@ -20,6 +21,7 @@ TOKEN_REFRESH_MARGIN = 30
 
 class TokenManager:
     """Класс обновления токена"""
+
     def __init__(self):
         self.token = None
         self.expires_at = None
@@ -45,7 +47,9 @@ class TokenManager:
         data = r.json()
         self.token = data["access_token"]
         expires_in = data.get("expires_in", 1800)
-        self.expires_at = datetime.now() + timedelta(seconds=expires_in - TOKEN_REFRESH_MARGIN)
+        self.expires_at = datetime.now() + timedelta(
+            seconds=expires_in - TOKEN_REFRESH_MARGIN
+        )
         return self.token
 
     def headers(self):

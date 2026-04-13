@@ -1,18 +1,20 @@
 """Тестирование модуля для получения/оновления токена длял OpenSky"""
 
-import pytest
-import requests
 from datetime import datetime, timedelta
 from unittest.mock import patch
-from src.utils.token_open_sky import TokenManager, TOKEN_URL  # замените your_module_name на имя вашего файла
+
+import pytest
+import requests
+
+from src.utils.token_open_sky import (  # замените your_module_name на имя вашего файла
+    TOKEN_URL,
+    TokenManager,
+)
 
 
 def test_refresh_sets_token_and_expiry(manager, requests_mock):
     """Проверка, что _refresh корректно сохраняет токен и время истечения."""
-    mock_response = {
-        "access_token": "fake_token_123",
-        "expires_in": 3600
-    }
+    mock_response = {"access_token": "fake_token_123", "expires_in": 3600}
     requests_mock.post(TOKEN_URL, json=mock_response)
 
     token = manager._refresh()
@@ -28,7 +30,7 @@ def test_get_token_returns_existing_valid_token(manager):
     # Ставим срок истечения в будущем (через 10 минут)
     manager.expires_at = datetime.now() + timedelta(minutes=10)
 
-    with patch.object(TokenManager, '_refresh') as mock_refresh:
+    with patch.object(TokenManager, "_refresh") as mock_refresh:
         token = manager.get_token()
         assert token == "valid_token"
         mock_refresh.assert_not_called()

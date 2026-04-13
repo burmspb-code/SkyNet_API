@@ -1,7 +1,4 @@
-import pytest
 import requests_mock
-from src.utils.api_adapter import OpenApiIntegrator
-from requests.exceptions import RequestException
 
 
 def test_safe_request_success(integrator):
@@ -55,14 +52,14 @@ def test_get_border_country(integrator):
         m.get("https://nominatim.openstreetmap.org/search", json=mock_response)
         result = integrator.get_border_country(country)
         assert result == mock_response
-        assert m.last_request.qs['country'] == [country.lower() if 'country' in m.last_request.qs else country]
+        assert m.last_request.qs["country"] == [
+            country.lower() if "country" in m.last_request.qs else country
+        ]
 
 
 def test_get_os_info(integrator, mock_token_headers):
     """Тест получения данных о самолетах"""
-    borders = {
-        'lamin': 10, 'lomin': 20, 'lamax': 30, 'lomax': 40
-    }
+    borders = {"lamin": 10, "lomin": 20, "lamax": 30, "lomax": 40}
     mock_planes = {"states": [["icao24", "callsign"]]}
 
     with requests_mock.Mocker() as m:

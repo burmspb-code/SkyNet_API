@@ -8,6 +8,7 @@ from src.utils.logging_config import setup_logger
 
 logger = setup_logger("base")
 
+
 class BaseSkyMapCoordinator(ABC):
     """Абстрактный базовый класс для работы с OpenStreetMap и OpenSky"""
 
@@ -59,20 +60,16 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
         data = self.get_countries_checklist()
 
         search_index = {}
-        for element in data.get('elements', []):
-            tags = element.get('tags', {})
-            iso_code = tags.get('ISO3166-1:alpha2') or tags.get('ISO3166-1')
+        for element in data.get("elements", []):
+            tags = element.get("tags", {})
+            iso_code = tags.get("ISO3166-1:alpha2") or tags.get("ISO3166-1")
 
-            name_ru = tags.get('name:ru')
-            name_en = tags.get('name:en') or tags.get('name')
+            name_ru = tags.get("name:ru")
+            name_en = tags.get("name:en") or tags.get("name")
 
             if iso_code:
                 # Данные о стране
-                country_data = {
-                    "iso": iso_code,
-                    "name_ru": name_ru,
-                    "name_en": name_en
-                }
+                country_data = {"iso": iso_code, "name_ru": name_ru, "name_en": name_en}
 
                 # Добавляем в индекс оба названия
                 if name_ru:
@@ -90,7 +87,7 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
         # Проверяем, что пришел не пустой список
         if isinstance(data, list) and len(data) > 0:
             first_result = data[0]
-            bbox = first_result.get('boundingbox', [])
+            bbox = first_result.get("boundingbox", [])
 
             if len(bbox) == 4:
                 # Nominatim отдает: [southLat, northLat, westLon, eastLon]
@@ -102,7 +99,7 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
                     "lamin": lat_min,
                     "lamax": lat_max,
                     "lomin": lon_min,
-                    "lomax": lon_max
+                    "lomax": lon_max,
                 }
 
         return {}

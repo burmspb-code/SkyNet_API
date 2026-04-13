@@ -1,8 +1,8 @@
 """Основной модуль связующей логикми для получения информации о самолетах в заданном регионе"""
 
 from src.base import SkyMapCoordinator
-from src.sky_control import AircraftStatus
 from src.depot import JsonAircraftStorage
+from src.sky_control import AircraftStatus
 
 
 def user_interaction() -> None:
@@ -27,13 +27,15 @@ def user_interaction() -> None:
         choice = input("\nВыберите действие: ")
 
         if choice == "1":
-            country_name = input("Введите название страны (напр. Австрия или Austria): ")
+            country_name = input(
+                "Введите название страны (напр. Австрия или Austria): "
+            )
             if country_name.lower() in country_dict:
                 border = fly_obj.extraction_border_country(country_name)
                 info = fly_obj.extraction_aircraft_info(border)
 
-                if info.get('states'):
-                    current_aircrafts = [AircraftStatus(*s) for s in info['states']]
+                if info.get("states"):
+                    current_aircrafts = [AircraftStatus(*s) for s in info["states"]]
                     print(f"✅ Получено объектов: {len(current_aircrafts)}")
                 else:
                     print("⚠️ В этом регионе сейчас нет самолетов.")
@@ -48,7 +50,9 @@ def user_interaction() -> None:
             try:
                 n = int(input("Сколько самолетов вывести? (N): "))
                 # Сортируем по высоте (благодаря order=True в dataclass)
-                top_n = sorted(current_aircrafts, key=lambda x: x.altitude, reverse=True)[:n]
+                top_n = sorted(
+                    current_aircrafts, key=lambda x: x.altitude, reverse=True
+                )[:n]
                 print(f"\n--- ТОП {n} по высоте ---")
                 for p in top_n:
                     print(p)
@@ -61,13 +65,17 @@ def user_interaction() -> None:
                 continue
 
             search_country = input("Введите страну регистрации: ")
-            filtered = [p for p in current_aircrafts if p.origin_country.lower() == search_country.lower()]
+            filtered = [
+                p
+                for p in current_aircrafts
+                if p.origin_country.lower() == search_country.lower()
+            ]
 
             if filtered:
-                for p in filtered: print(p)
+                for p in filtered:
+                    print(p)
             else:
                 print("Ничего не найдено.")
-
 
         elif choice == "4":
             if not current_aircrafts:
@@ -83,4 +91,3 @@ def user_interaction() -> None:
             break
         else:
             print("Некорректный ввод.")
-

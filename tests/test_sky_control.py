@@ -2,10 +2,29 @@
 
 from src.sky_control import AircraftStatus
 
+
 def test_aircraft_status_validation():
     """Тест обработки "битых" данных от OpenSky API"""
     # 17 параметров, где есть None в высоте и странный тип в позывном
-    raw_data = [None, 12345, None, 0, 0, 0, 0, None, True, -100.5, 0, 0, 0, 0, 0, False, 0]
+    raw_data = [
+        None,
+        12345,
+        None,
+        0,
+        0,
+        0,
+        0,
+        None,
+        True,
+        -100.5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        False,
+        0,
+    ]
 
     status = AircraftStatus(*raw_data)
 

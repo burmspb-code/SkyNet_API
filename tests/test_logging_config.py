@@ -1,10 +1,12 @@
 """Тестирование модуля для настройки логирования проекта"""
 
-import os
 import logging
-import pytest
+import os
 from unittest.mock import patch
-from src.utils.logging_config import setup_logger, LOG_DIR
+
+import pytest
+
+from src.utils.logging_config import LOG_DIR, setup_logger
 
 
 @pytest.fixture(autouse=True)

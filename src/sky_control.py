@@ -2,7 +2,14 @@
 
 from dataclasses import dataclass, field
 
-@dataclass(order=True, slots=True, init=False) # slots=True создает __slots__ автоматически
+from src.utils.logging_config import setup_logger
+
+logger = setup_logger("sky_control")
+
+
+@dataclass(
+    order=True, slots=True, init=False
+)  # slots=True создает __slots__ автоматически
 class AircraftStatus:
     """Класс текущего состояния самолета"""
 
@@ -36,7 +43,9 @@ class AircraftStatus:
         if raw_alt is None:
             self.altitude = 0.0
         elif not isinstance(raw_alt, (int, float)):
-            logger.error(f"Некорректный тип высоты: {type(raw_alt)}, значение заменено на 0.0.")
+            logger.error(
+                f"Некорректный тип высоты: {type(raw_alt)}, значение заменено на 0.0."
+            )
             self.altitude = 0.0
         else:
             self.altitude = float(raw_alt)
@@ -57,5 +66,7 @@ class AircraftStatus:
     def __repr__(self):
         """Вывод информации для разработчкика"""
         status = "🅿️ На земле" if self.on_ground else "✈️ В воздухе"
-        return (f"{status} | Рейс: {self.callsign} ({self.origin_country}) | "
-                f"Высота: {int(self.altitude)}м | Скорость: {int(self.velocity * 3.6)}км/ч")
+        return (
+            f"{status} | Рейс: {self.callsign} ({self.origin_country}) | "
+            f"Высота: {int(self.altitude)}м | Скорость: {int(self.velocity * 3.6)}км/ч"
+        )
