@@ -1,4 +1,4 @@
-"""Модуль с описнием базовых классов проекта"""
+"""Модуль с описанием базовых классов проекта"""
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict
