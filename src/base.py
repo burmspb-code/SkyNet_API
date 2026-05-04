@@ -69,7 +69,7 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
 
             if iso_code:
                 # Данные о стране
-                country_data = {"iso": iso_code, "name_ru": name_ru, "name_en": name_en}
+                country_data = {"iso_code": iso_code, "name_ru": name_ru, "name_en": name_en}
 
                 # Добавляем в индекс оба названия
                 if name_ru:
