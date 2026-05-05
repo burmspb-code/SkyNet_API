@@ -104,7 +104,7 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
 
         return {}
 
-    def extraction_aircraft_info(self, border) -> Any:
+    def extraction_aircraft_info(self, border: dict[str, float]) -> Any:
         """Метод получения данных о самолетах над определенной рамкой"""
 
         data = self.get_os_info(border)
