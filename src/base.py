@@ -1,4 +1,4 @@
-"""Модуль с описнием базовых классов проекта"""
+"""Модуль с описанием базовых классов проекта"""
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict
@@ -69,7 +69,7 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
 
             if iso_code:
                 # Данные о стране
-                country_data = {"iso": iso_code, "name_ru": name_ru, "name_en": name_en}
+                country_data = {"iso_code": iso_code, "name_ru": name_ru, "name_en": name_en}
 
                 # Добавляем в индекс оба названия
                 if name_ru:
@@ -94,6 +94,12 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
                 # Превращаем в числа
                 lat_min, lat_max, lon_min, lon_max = [float(x) for x in bbox]
 
+                if lon_min == -180.0 and lon_max == 180.0:
+                    if country_name == "Russia":
+                        lon_min, lon_max = 19.0, 170.0  # Примерные границы РФ без разрыва меридиана
+                    if country_name == "United States":
+                        lon_min, lon_max = -130.0, -60.0  # Только материковая часть США
+
                 # Возвращаем словарь, который удобно распаковать в параметры запроса
                 return {
                     "lamin": lat_min,
@@ -104,7 +110,7 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
 
         return {}
 
-    def extraction_aircraft_info(self, border) -> Any:
+    def extraction_aircraft_info(self, border: dict[str, float]) -> Any:
         """Метод получения данных о самолетах над определенной рамкой"""
 
         data = self.get_os_info(border)
