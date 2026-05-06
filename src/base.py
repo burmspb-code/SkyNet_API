@@ -94,6 +94,12 @@ class SkyMapCoordinator(BaseSkyMapCoordinator, OpenApiIntegrator):
                 # Превращаем в числа
                 lat_min, lat_max, lon_min, lon_max = [float(x) for x in bbox]
 
+                if lon_min == -180.0 and lon_max == 180.0:
+                    if country_name == "Russia":
+                        lon_min, lon_max = 19.0, 170.0  # Примерные границы РФ без разрыва меридиана
+                    if country_name == "United States":
+                        lon_min, lon_max = -130.0, -60.0  # Только материковая часть США
+
                 # Возвращаем словарь, который удобно распаковать в параметры запроса
                 return {
                     "lamin": lat_min,

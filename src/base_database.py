@@ -1,29 +1,16 @@
-"""Классы для работы с БД"""
-import os
+"""Модуль с описанием классов проекта для работы с БД"""
 
 import psycopg2
-from dotenv import load_dotenv
 from psycopg2 import sql
 
-load_dotenv()
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_DATABASE = os.getenv("DB_DATABASE")
-DB_USER = os.getenv("DB_USER")
-DB_SECRET = os.getenv("DB_SECRET")
+from src.utils.config_db import config_db
 
 
 class DBManager:
     """Класс для взаимодествия с БД PostgresSQL"""
 
     def __init__(self):
-        self.db_params = {
-            "host": DB_HOST,
-            "port": DB_PORT,
-            "database": DB_DATABASE,
-            "user": DB_USER,
-            "password": DB_SECRET
-        }
+        self.db_params = config_db()  # Считываем параметры конфигурации подключения
         self.conn = psycopg2.connect(**self.db_params)
         self.conn.autocommit = True  # Чтобы данные сохранялись сразу
 
@@ -36,22 +23,14 @@ class DBManager:
         if not data:
             return
 
-        columns = data[0].keys()  # Получаем наименования столбцов
-
-        # Преобразуем для INSERT в строковый формат
+        columns = data[0].keys()
         columns_str = ", ".join(columns)
         placeholders = ", ".join([f"%({col})s" for col in columns])
 
         query = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
 
         if conflict_column:
-            update_columns = [f"{col}=EXCLUDED.{col}" for col in columns if col != conflict_column]
-            if update_columns:
-                update_str = ", ".join(update_columns)
-                query += f" ON CONFLICT ({conflict_column}) DO UPDATE SET {update_str}"
-            else:
-                # Если обновлять нечего, просто ничего не делаем при конфликте
-                query += f" ON CONFLICT ({conflict_column}) DO NOTHING"
+            query += f" ON CONFLICT ({conflict_column}) DO NOTHING"
 
         with self.conn.cursor() as cursor:
             cursor.executemany(query, data)
@@ -128,7 +107,7 @@ class DBManager:
     def get_all_aeroplanes(self, country_iso: str) -> list[tuple]:
         """Получает список всех воздушных судов"""
         query = """
-        SELECT icao24
+        SELECT *
         FROM aircraft_info
         WHERE country_iso_code=%s
         ORDER BY icao24;
@@ -146,10 +125,10 @@ class DBManager:
 
         return self._execute(query, (country_iso,))
 
-    def get_aeroplanes_with_higher_speed(self, country_iso: str) -> list:
+    def get_aeroplanes_with_higher_speed(self, country_iso: str) -> list[tuple]:
         """Получает список всех самолетов, у которых скорость выше средней"""
         query = """
-        SELECT icao24, velocity
+        SELECT *
         FROM aircraft_info
         WHERE country_iso_code=%s AND velocity > (
           SELECT AVG(velocity)
@@ -161,7 +140,7 @@ class DBManager:
 
         return self._execute(query, (country_iso, country_iso))
 
-    def get_aeroplanes_with_keyword(self, country_iso: str, keyword: str) -> list:
+    def get_aeroplanes_with_keyword(self, country_iso: str, keyword: str) -> list[tuple]:
         """Получает список всех самолетов, в позывном которых содержатся переданные в метод символы"""
         query = """
         SELECT icao24, callsign
@@ -175,3 +154,11 @@ class DBManager:
         search_pattern = f"%{keyword}%"
 
         return self._execute(query, (country_iso, search_pattern))
+
+    def get_data_table(self, table_name: str) -> list[tuple]:
+        """Получение списка всех строк таблицы"""
+        query = """
+        SELECT * FROM %s;
+        """
+
+        return self._execute(query, (table_name,))

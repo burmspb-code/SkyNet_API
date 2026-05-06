@@ -1,9 +1,8 @@
 # Проект SkyNet (Курсовая робата).
+Данной проект является дополнением к предыдущей работе, целью которого является занесение информации
+с открытых ресурсов https://opensky-network.org/ и https://opensky-network.org/ в локальную базу данных PostgresSQL,
+и работа с этими данными.
 
-## Цель проекта:
-
-***Разработка приложения, которое будет собирать информацию о самолетах в воздушных пространствах тех стран, которые выберет
-пользователь, с дальнейшей обработкой полученных данных..***
 
 **Инструкция по установке:**
 
@@ -16,15 +15,42 @@
     3. Запустите проект:
         poetry run python src/main.py
 
-## 🧪 Тестирование:
+Для работы проекта нужно создать три таблицы в БД PostgresSQL.
+Скопируйте и запустите SQL-скрипт:
 
-Для проверки корректности работы модулей SkyNet используется фреймворк pytest.
-Тесты покрывают основные функции загрузки, фильтрации и обработки данных.
+    Для таблицы "iso_code_countries":
 
-Проверяемые модули: api_adapter.py, logging_config.py, token_open_sky.py, aircraft_collector.py,
-base.py, depot.py, sky_control.py.
+    create table iso_code_countries(
+    iso_code varchar(3) primary key,
+    name_ru text,
+    name_en text
+    );
 
-После запуска pytest --cov=src --cov-report=html подробный отчет доступен в папке htmlcov/index.html
+    Для таблицы "aircraft_info":
+
+    create table aircraft_info(
+    icao24 text primary key,
+    country_iso_code varchar(3),
+    velocity float8,
+    altitude float8,
+    callsign text,
+    origin_country text,
+    on_ground boolean,
+    last_update_time timestamptz default now()
+    );
+
+    
+    Для таблицы "countries_info":
+
+    create table countries_info(
+    iso_code varchar(3) primary key,
+    lat_min float8,
+    lat_max float8,
+    lon_min float8,
+    lon_max float8
+    );
+
+Проверка работы модулей - RUN  main.py
 
 **Используемые модули:**
 
@@ -36,6 +62,12 @@ base.py, depot.py, sky_control.py.
     - depot.py,
     - sky_control.py,
     - main.
+
+Модули для работы с БД:
+    
+    - config_db.py,
+    - aircraft_collector_db.py,
+    - base_database.py.
 
 ### **api_adapter**
 
@@ -64,6 +96,18 @@ base.py, depot.py, sky_control.py.
 ### **sky_control.py**
 
 Модуль для взаимодейсвия с воздушными судами
+
+### **config_db.py**
+
+Модуль для парсинга параметров подключения в словарь
+
+### **aircraft_collector_db.py**
+
+Модуль для тестирования функционала работы с БД
+
+### **base_database.py**
+
+Модуль с описанием классов проекта для работы с БД
 
 ### **main.py**
 
